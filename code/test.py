@@ -52,20 +52,20 @@ def main():
     model.eval()
 
     print("\n2. Define Dataloader")
-    if args.dataset == 'imagepath': # not for do_evaluate in case of imagepath
+    if args.dataset == 'imagepath':  # not for do_evaluate in case of imagepath
         dataset_kwargs = {'dataset_name': 'ImagePath', 'data_path': args.data_path}
     else:
-        dataset_kwargs = {'data_path': args.data_path, 'dataset_name': args.dataset,
-                          'is_train': False}
+        dataset_kwargs = {'data_path': args.data_path, 'dataset_name': args.dataset, 'is_train': False}
 
     test_dataset = get_dataset(**dataset_kwargs)
-    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False,
-                             pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, pin_memory=True)
 
     print("\n3. Inference & Evaluate")
     for batch_idx, batch in enumerate(test_loader):
         input_RGB = batch['image'].to(device)
         filename = batch['filename']
+        # Check first channel of input
+        print(input_RGB[0][0])
 
         with torch.no_grad():
             pred = model(input_RGB)
@@ -86,20 +86,19 @@ def main():
             pred_d = pred_d.squeeze()
             if args.dataset == 'nyudepthv2':
                 pred_d = pred_d.cpu().numpy() * 1000.0
-                cv2.imwrite(save_path, pred_d.astype(np.uint16),
-                            [cv2.IMWRITE_PNG_COMPRESSION, 0])
+                cv2.imwrite(save_path, pred_d.astype(np.uint16), [cv2.IMWRITE_PNG_COMPRESSION, 0])
             else:
                 pred_d = pred_d.cpu().numpy() * 256.0
-                cv2.imwrite(save_path, pred_d.astype(np.uint16),
-                            [cv2.IMWRITE_PNG_COMPRESSION, 0])
+                cv2.imwrite(save_path, pred_d.astype(np.uint16), [cv2.IMWRITE_PNG_COMPRESSION, 0])
             
         if args.save_visualize:
             save_path = os.path.join(result_path, filename[0])
             pred_d_numpy = pred_d.squeeze().cpu().numpy()
             pred_d_numpy = (pred_d_numpy / pred_d_numpy.max()) * 255
-            pred_d_numpy = pred_d_numpy.astype(np.uint8)
-            pred_d_color = cv2.applyColorMap(pred_d_numpy, cv2.COLORMAP_RAINBOW)
-            cv2.imwrite(save_path, pred_d_color)
+            # JW: Changed to uint16 and removed color map
+            pred_d_numpy = pred_d_numpy.astype(np.uint16)
+            # pred_d_color = cv2.applyColorMap(pred_d_numpy, cv2.COLORMAP_RAINBOW)
+            cv2.imwrite(save_path, pred_d_numpy)
         logging.progress_bar(batch_idx, len(test_loader), 1, 1)
 
     if args.do_evaluate:

@@ -2,5 +2,5 @@
 *.sh
 ckpt/
 logs/
-results/
+results/*
 __pycache__/
